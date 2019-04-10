@@ -1,0 +1,21 @@
+the problem is with temporal locality. loading and unloading two bytes that needs the same cache lines.
+
+good: the protocol require only a bit (I or V).
+
+moesi stable states.
+
+write-trougth caches any time exchanging with other lev cache the data must propagate immediately.
+write back propaga quando quando c'è evict esplicita.
+
+false cache sharing must be avoided from the operating system in the memory management.
+solution: move data to another ram location.
+
+phys addr: divided in frames.
+a page can be mapped to the same frmae of another.
+
+shmem: vistual aliasing. map to the same cache location or flush.
+
+program order: total order of mem ops 
+consostency enforcing combining memory order and program oerder.
+
+sequeantial consincesty is not implemented

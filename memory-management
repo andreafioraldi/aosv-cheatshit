@@ -1,0 +1,191 @@
+1) Numa Nodes
+-------------
+
+Numa node in pglist_data struct.
+
+pddat_list liked list of of struct describing numa nodes.
+
+pg_data_t is the typedef of pglist_data.
+
+Phys mem is managed in term of page frame numbers.
+This implicit give as the phys addr.
+
+ZONE_NORMAL first ~ 900 mb for kernel
+area of kern reverved to him mapped to ZONE_NORMAL
+what is ZONE_NORMAL is stable and always in page table.
+
+ZONE_HIGHMEM mapping is transient (e.g. userspace mem)
+
+ZONE_DMA mainly for buffer caching (e.g. write back to hard disk)
+
+2) Zones intialization
+----------------------
+
+e820 table in mem filled by BIOS describes what page frames are avaiable
+
+buddy allocator. two buddies (chunks) can be consolidated. used for page frames.
+merging pages as power of 2.
+view as binary tree with labels allocated/free (leafs are represents frames).
+e.g. we want allocate 2*PAGE_SIZE, we search until there is a last level node
+with the two leafs both free.
+
+zone_t:
+free_area (see free_area_t)
+zone_mem_map
+...
+
+page:
+list of mapping
+count (think about cow)
+flags
+
+stady state allocator must be stupped in mode to not touch bootmem allocated
+mem (marked as PG_reserved in page.flags)
+at the end this mem will be given back.
+
+each description of numa node is in the memory associated to the node
+(locality for perf).
+
+free_area_t {
+	list { prev, next }
+	uint *map
+}
+
+implementation of buddy is linux is not based on binary tree. we have a free list.
+there is an array to access in O(1) a level. each level has a block list.
+when two blocks are consolidated they are moved to the higher level.
+
+in free_area_t we have a biptmap in which each bit represents two buddies that
+is a block that can be server a request to an higher level.
+when one bit is 1 means that it is splitted and so in a lower level.
+when free i simply set a bit.
+
+a request we traverse starting from 0 to MAX_ORDER.
+
+!!! we need sync for this, in fact in zone_t there is a spinlock
+
+3) High Memory
+--------------
+
+not permament mapping.
+
+the API to retrieve mem from HIGHMEM are different respect the API used to
+retrieve mem in NORMAL
+
+vmap() long duration mapping
+
+kmap() short duration ampping of single page
+
+kmap_atomic() like kmap but for only the cpu that issued it.
+
+Deallocation:
+
+array of counter pkmap_count[LAST_PKMAP] increment when a page is mapped.
+0 not mapped
+1 not mapped now but cached (we mast then invalidate TLB)
+n>1 mapped n-1 times
+
+kunmap(page) decrement reference counter
+
+4) Reclaiming boot memory
+-------------------------
+
+mem_init() destroy the bootmem allocator.
+
+the frames are released resetting PG_RESERVED bit.
+
+faked a buddy free (set count to 1 and then__free_page) to get such mem in the
+buddy system.
+
+5) Allocation context
+---------------------
+
+In trap handlers vs syscalls handlers etc...
+
+linux/malloc.h exposed memory management API to other kern subsystems.
+
+get_zeroed_page, free_page, etc...
+
+There are not sanity checks in free_page (fake chuncks yeeee).
+
+flags are used to specify allocation context.
+
+ - GFP_ATOMIC interrupt context (critical, cannot lead to sleep)
+
+ - GFP_USER allocate mem for user space acyivities (but not directely used in
+ user space) (can lead to sleep)
+
+ - GFP_BUFFER alloc a buffer (can lead to sleep)
+
+ - GFP_KERNEL alloc kern mem (can lead to sleep)
+
+With alloc_pages_node we can specify NUMA policies.
+On the contrary __get_free_pages is agnostic of NUMA.
+
+(TODO in user space see numa_move_pages)
+
+On top of buddy system the kernel build a set of fast allocators.
+FOr example pdg_alloc and al. to allocate page tables.
+
+Other allocators are quicklists and slab/slub/slob allocators.
+
+Quicklists are lists of pages living on a single core.
+
+note: get_cpu_var(var) like TLS and also disable preemtion
+      put_cpu_var(var) enable again prremtion (sheduling to another thread)
+      after processing per cpu var
+
+quicklist {
+	void* page
+	int nr_pages 
+}
+
+page point to pages that have an headers to be a linked list of pages.
+nr_pages is the size of such list.
+
+quicklist_alloc get a page from quicklist (there are many for a core accessible
+with an index nr).
+when updating selected quicklist this is done under get_cpu_var.
+
+if there are not avaiable pages in quicklist fallback to __get_free_page.
+
+another flag for buddy system: __GFP_ZERO like calloc.
+
+6) The SLAB allocator
+---------------------
+
+It works on top of the buddy system.
+
+The allocator has caches that have 3 buckets (full/partial/free).
+Each slab manages a set of pages (continuos in phys mem due to buddy structure).
+Each page there are many objects.
+
+cache:
+-->slabs_full:
+---->slabs:
+------>pages:
+-------->object
+-------->...
+-------->object
+-->slabs_partial:
+...
+-->slabs_free:
+...
+
+Each slab manages objects of the same size. Slab are moved to full/partial/free
+based on the state of objects in pages.
+
+The slab interface is kmalloc(size, flags), kfree(addr),
+kmalloc_node(size, flags, node).
+
+Slab coloring:
+
+page: | object | coloring | object | coloring | ... |
+
+len ( | object | coloring | ) = L1_CACHE_BYTES
+
+coloring is padding to ensure that an object is not splitted in L1 cache
+(so we avoid cache miss when traverse an entire object)
+
+So objects are L1 cache aligned. 
+

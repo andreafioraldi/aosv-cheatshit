@@ -1,0 +1,150 @@
+1) Trap initialization
+----------------------
+
+trap_init()
+
+Setup entries on GDT related to syscalls.
+
+It setups also the gate for the trap 0x80 (SYSCALL_VECTOR) to the interrupt handler 'system_call'.
+
+2) Syscalls dispatching
+-----------------------
+
+Index in system call stable.
+Syscall handler invoked with and indirect call.
+
+Dispatcher -> Syscall handler -> Iret
+
+Iret also restore the original CPL.
+
+Standard macros in include/asm-xx/unistd.h let userspace to access the gate.
+There is a macro for each range of parameters, from 0 to 6.
+
+__syscallN(type, name, type1, arg1, ... typeN, argN)
+__syscall_return(type, res) if res < 0 then errno = -res and res = -1
+
+if syscall returns negative value it failed.
+
+The dispatcher saves on stack the parameters passed in regs and then call the syscall handler.
+
+MSR for sysenter.
+New mode in x86.
+
+In x86_64 we have syscall. It uses different set of MSR respect to sysenter.
+MSR_STAR used to set CS for kernel and user.
+MSR_LSTAR used to set syscall dispatcher address.
+
+vDSO shared library part of kernel code space.
+It implements all the facilities of the kernel that wants to be executed in userspace.
+vDSO base addr can be getted usinf auxiliary  elf header. (getauxval()).
+
+Many syscalls does not require kernel mode and are served in vDSO.
+
+3) Syscalls table
+-----------------
+
+In a text file that maps name to addr user to generate the table with a shell script.
+
+syscall_64.tbl
+0 common read __x64_sys_read
+
+char __user* buf: __user is a facility for the symbolic executor
+
+__SYSCALL_DEFINEx define the implementation.
+
+sys_read is aliased to SyS_read with parameters sign extension for security reason.
+
+asmlinkage_protect tells the compiler to not clear the stack in which there are the
+parameters handled by the dispatcher.
+
+4) Call from userspace
+----------------------
+
+sysenter:
+
+Save registers that will be clobbered, update frame pointer, sysenter, restore.
+
+Restore is not really needed.
+
+In __kernel_vsyscall we have:
+sysenter
+int 80h
+pop ebp
+pop edx
+pop ecx
+
+Sysenter uses an MSR and by default return to the location with pops in
+__kernel_vsyscall.
+
+The kernel is using VDSO to specify ret addr for sysenter.
+There is a ret, so we must push the retaddr to our code.
+
+push after
+push ...
+sysenter
+after:
+
+VDSO:
+
+call *%gs:0x10
+
+In GS segmente register the kernel puts an address of a structure.
+
+Enter in the same code path, __kernel_vsyscall, and use sysenter.
+
+5) Modern syscall activation
+----------------------------
+
+ - syscall instruction.
+ - take entry_syscall_64 addr from LSTAR
+ - save all registers in pt
+ - call do_syscall_64
+ - check nr <= MAX_SYSCALLS
+ - pt->rax = syscall_table[nr](pt)
+
+6) Spectre patch
+----------------
+
+Forcing taking branch in kernel code.
+
+pt->rax = syscall_table[nr](pt) is critical in kernel code.
+
+retpoline transform a call that depends on data in a safe way for spectre.
+
+In particular for syscall_table[nr](pt) (r?x managed by register allocation):
+
+mov r?x, QWORD PTR [syscall_table+rax*8]
+call __x86_indirect_thunk_r?x
+
+__x86_indirect_thunk_r?x:
+    call 2fh
+1:  pause
+    lfence
+    jmp 1bh
+2:  mov QWORD PTR [rsp], r?x
+    ret
+
+Uses retaddr replace of the first call to the target location.
+
+The branch prediction can now take only two choices: correct ret value of the
+incorrect, that is label 1.
+
+If CPU misspeculate, it will go in a infinite loop of lfence :)
+
+We can compile the kernel to not use this, the macro is CONFIG_RETPOLINE.
+
+7) sys_ni_syscall
+-----------------
+
+Initially, the syscall table is filled by sys_ni_syscall.
+
+With __SYSCALL_64(nr, sym, qual) [nr] = sym the syscall table entry is filled
+with a different handler.
+
+Deprecated or not implemented syscalls must fail.
+
+The address os sys_ni_syscall can be getted with a kprobe.
+
+
+
+

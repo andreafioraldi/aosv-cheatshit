@@ -1,0 +1,49 @@
+compile time small page table
+
+PAGE OFFSET -> very minimalistic virtual to phys mapping (in 32 bit it adds 3 gb cause in phys mem kernel starts at 0 and in virt mem it starts at 3 gb).
+
+translate swapped_pd_dir (comp time pg table) to phys mem.
+
+cr3 is the ptr to page table.
+
+enable paging setting bit in cr0.
+
+in early page table in swapped there are 2 entries of 4 mb so only 8 mb must be used by the kernel to init its internal subsystem.
+
+to enlarge virt mem we must touch the page table.
+
+this 8 mb are occupied by code and data and some free space. we must use this free mem to allocate pages.
+
+Bootmem in linux is an allocator (memory map manager). It works when full paging is not avaiable. The granularity is 4kb.
+
+at higher level the kernel will manage different classes of page tables. Each arch define macros that are combination of bits.
+
+in 4kb chuncks pagetable_init the kern will allocate the final page table
+
+Page General Directory -> Page Middle Directory -> Page Table
+
+in 32 bit PMD has 1 entry w/o PAE
+
+we are filling a page table with pg enabled yet. First of all we populate the low lev pg table.
+We must ensure that the entry in swapper pg must point to the same 4kb page in the low entry.
+
+TLB cache the original 4mb pages. So this shit is for robustness but not generally an issue.
+
+so at the end we must flush TLB. all the cores will use the new pg table.
+
+__force_order is an extern var (but never declared really) that passed to inline asm as memory write to ensure that the asm will not be reordered.
+this is done to avoid fences that will slowdown. just prevent compiler reordering.
+
+select the best tlb invalidation codefor the arch cause it can be costly.
+flush_tlb_all() sync all cores and to costs. used when pg completely modified and we must invalid everything.
+
+flush_tlb_mm takes an mm struct used to describe address space of userspace proc. usually confined to local proc.
+
+flush_tlb_page with only a specified page to be invalidated. very low cost.
+also flush_tlb_range, useful when implementing mremap or mprotect.
+
+one private TSS foreach cores so different GDT foreach core with only TSS changed.
+
+after this cpu_idle, an infinite loop of hlt waiting interrupts and rescheduling.
+
+
