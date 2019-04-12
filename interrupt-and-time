@@ -275,65 +275,147 @@ Top half is the not critical action that is needed to finalize the interrupt.
 Bottom half is the deferrable work, top half schedule it in a proper data
 structure.
 
+Deferred work is executed in the same CPU of the top half. Probablt the
+reconcilition point is to too time after the top half so this choice exploit
+the cache.
 
+14) SoftIRQs
+------------
 
+ - Fired at reconciliation points
+    - Coming back from hard IRQ (IF=1)
+    - Coming back from system call
+    - Specified points
+ - Interruptible (so reentrant)
+ - Rarely used directly
 
+Tasklets are used to not trigger soft IRQ indirectly, otherwise there will be a
+considerable performance loss.
 
+To trigger them there is a per-CPU bitmap that set if there is a pending
+softIRQ. irq_stat[cpu].__softirq_pending.
 
+In each CPU there is also a low priority thread that check, when scheduled, if
+there are entries set in this bitmap.
 
+The classes that can be setted in the bitmap are 9. For example there is the
+entry for block devices. The top half register the bottom half here.
 
+There is also the network entry and the timer.
 
+The tasklets entry is general purpose.
 
+__do_softIRQ() this function activates functions that have bit enabled in the
+pending mask.
 
+This switches to private stack and save a copy of the bitmap (and using those
+copy). This small init work is done with IF=0 and then IF is re-enabled.
+This allows new top half to register new bottom half while processing old
+bottom halves.
 
+The duration of that routine can be long. To avoid to finish the time windows,
+not all bottom halves are processed but they are left to the low-priority
+deamon.
 
+A tasklet is executed once, but in the handler you can re-eanble it.
 
+Synchronizing tasklets registered by 2 cpu can be a pain, so the kernel enforce
+not concurrent execution of tasklets.
 
+Tasklets run with preemption disabled so you cannot call functions that can
+lead to sleep.
 
+I you want to do this, use the work queue. This works can be executed later.
+Similar to tasklets but without nesting. A pool of threads will execute them.
 
+15) Timekeeping
+---------------
 
+Multiple way to keep track of time via software and hardware with different
+granularity.
 
+ - Timeouts: used mainly by networking to detect when an event does not occurs
+   as excepted. Require low resolution. The average case is that they are
+   removed and does not expire.
 
+ - Timers: sequence ongoing events. Usually needs high resolution.
 
+Hardware Clock Sources:
 
+ - Real Time CLock (RTC), avaiable in all PCs.
+ 
+ - Time Stamp Counter (TSC), uses cpu clock, a monotonic counter that can't be
+   used for time. rdtsc x86 instruction. (this shit can overflow!)
 
+ - Programmable Interval Timer (PIT), programmable laps, send interrupts.
+ 
+ - CPU Local Time (LAPIC), delivers interrupt only to the local CPU.
+ 
+ - High Precision Event Timer (HPET), multiple timers that can be used
+   independently.
 
+Clock events are abstraction introduced in 2.6.
+Those events are generated from Clock Event Devices. Those Devices are
+programmable and the kernel will choose the best harware support avaiable that
+can generate the event.
+Portability suffer for this, the same code can be less accurate in different
+machines.
 
+I the global variable jiffies keeps the number of ticks since startup.
 
+Timer Interrupts are top/bottom half.
 
+Top half:
+  - Register bottom half
+  - inc jiffies
+  - Check if the scheduler needs to be activated and then set need_resched = 1
 
+Bottom half:
+  - While need_resched call the scheduler
 
+All these parts can produce delays. High resolution timers uses ktime_t type
+that has a nanoseconds scalar representation instead of jiffies.
 
+ktime_t can guarantee a lower bound but not hard real-time.
 
+hrtimer struct and related APIs are used to do this.
 
+Dynamic kernel timers are in timer_list. All functions in the list will be 
+triggered at expire. Based on jiffies.
 
+Releasing resourcing in a function called from a dynamic kernel timers must be
+a careful operation.
+Timers must be deleted before releasing resources, they are prone to race
+conditions.
 
+In the Timer Wheel is the place were we register multiple timer_list.
+Multilevel priority queue.
 
+The problem is that you do not ave guarantee on unlink and placing events.
+This is linear for the bucket and this is a problem.
+Two different balancing operation can take different time on different levels.
 
+Since kernel 2.6 Linux started relying on LAPIC timer. This immediately ack the
+IRQ and then call local_apic_timer_interrupt().
 
+16) Watchdogs
+-------------
 
+A component that monitors a system for "normal" beahviour and in case of
+failure it perfroma a reset in order to recover normal operation.
+This allows remotely log after a restart and do not lose machine that are not
+recheable phisically.
 
+In Linux a watchdog is implemented in 2 parts:
 
+ - A module that is able to do hard reset
+ - An userpace application
 
+/dev/watchdog is used to notify the kernel module that the application is
+still alive (done periodically).
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+The kernel device use NMI to check the counter that counts the notification
+from user space and then if it is too old hard reset the machine.
 
 
 
