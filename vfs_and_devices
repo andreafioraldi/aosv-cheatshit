@@ -1,0 +1,378 @@
+1) Virtual File System
+----------------------
+
+VFS is a software layer which abstract the actual implementation of devices
+and files. It is an uniform interface.
+
+The representation can be in RAM (full or partial) or in device (possibly
+outdated before sync).
+
+There are 2 parts, the FS-independent part that is an interface towards other
+subsystems of the kernel and the FS-dependent part.
+
+Remeber, in UNIX everything is a file.
+
+2) EXT2
+-------
+
+Index Node (inode) is a representation of a node of the tree hierarchy in the
+filesystem. Basically we have a table of inodes.
+
+Inode
++-+-+-+-+
+| info  |
++-+-+-+-+---> Direct data block 1
+| 1     |
++-+-+-+-+---> Direct data block 2
+| 2     |
++-+-+-+-+         +-+-+-+----> Indirect data block
+| ...   |         | 1   |
++-+-+-+-+-------->+-+-+-+
+| 13    |         | 2   |
++-+-+-+-+         +-+-+-+     +-+-+-+----> Double indirect data block
+| 14    |         ....        | 1   |
++-+-+-+-+-------->+-+-+-+---->+-+-+-+
+| 15    |         | 1   |     | 2   |
++-+-+-+-+         +-+-+-+     +-+-+-+
+                  ...         ...
+
+info are metadata, like permissions. First entries are for diretc data blocks.
+When the file grow in size, the space in inode can be exausted and so the last
+blocks points to indirect data blocks (block of pointers).
+
+Multiple IO operation to lacate indirect data blocks and double indirect data
+blocks.
+
+3) VFS Global Organization
+--------------------------
+
+Inodes in VFS are different thing from EXT2 inodes.
+
+VFS implements a caching of metadata of the filesystem geometry.
+
+dentry object is a generic abstraction of a node. It can represents folder,
+file, links etc..
+
+For each dentry there is an asociated inode that describe the file from a
+device point of view.
+
+dentry has only a child field, but if the dentry is a folder the child is a
+list of dentry. Each childern dentry has a parent field.
+
+file_system_type
+    v
+    v     vfsmount
+    v        v
++-+-+-+-+-+-+-+-----^
+| SUPERBLOCK  |     ^
++-+-+-+-+-+-+-+---v ^
+  ^               v ^
++-+-+-+-+------>+-+-+-+-+-+         (possibly belonging to other fs)
+| inode |       |  dentry |
++-+-+-+-+<------+-+-+-+-+-+---child--->+-+-+-+-+-+---->+-+-+-+-+-+
+                  ^     ^              |  dentry |     |  dentry |
+                  ^     ^--------------+-+-+-+-+-+     +-+-+-+-+-+
+                  ^------------------------------------v
+
+A superblock is an instance of the actual filesystem, vfsmount is the instance
+of the filesystem mounted. There can be multiple vfsmount instance but only
+a superblock for each device (a device can be mounted multiple times).
+
+In inode can be pointers to frames in RAM that are cache for pieces of files.
+
+struct file_system_type {
+  name
+  fs_flags
+  func ptr super_block* read_super(super_block*, void*, int)
+  module* owner
+  file_system_type* next
+  list_head fs_supers
+}
+
+read_super is binded to the actual filesystem routine that reads the
+super block.
+
+rootfs is an empty root folder while the system is booting. It cannot be
+unmounted and this avoid to check for an empty list (like init does for
+the processes).
+During boot the kernel replace the mountpoint of rootfs.
+This is the entrypoint of the file_system_type list.
+
+struct vfsmount {
+  list_head mnt_hash
+  vfsmount* mnt_parent  // fs in which is mounted (*)
+  dentry* mnt_mountpoint
+  detry* mnt_root
+  super_block* mnt_sb
+
+  list_head mnt_mounts // not point to vfsmount objects but dentry
+  list_head mnt_child
+
+  atomic_t mnt_count // refcount
+  mnt_flags
+  mnt_devname
+
+  list_head mnt_list
+}
+
+(*) Consider /mnt/foo/bar:
+    / is ext3, /mnt/foo dentry is fat32
+    We split /mnt/foo is splitted in two dentry objects, one is the folder in
+    /mnt, the other is the root node of the fast32 fs.
+    In the fast32 vfsmount the first object is associated to mnt_parent and is
+    the mnt_moutnpint, the second is mnt_root.
+
+struct super_block {
+  ...
+  file_system_type *s_type
+  super_operations *s_op // bridge between vfs and device dependent part
+  ...
+  dentry *s_root
+  ...
+  list_head s_dirty // dirty inodes
+  ...
+  union { // rigth member given by info in s_type
+    ext2_sb_info ext2_sb
+    ext3_sb_info ext3_sb
+    ...
+    void* generic_sb
+  }
+}
+
+struct dentry {
+  ...
+  inode* d_inode
+  dentry* parent
+  ...
+  list_head d_child
+  list_head d_subdirs
+  ...
+  qstr d_name
+  ...
+  lockref d_lockref // lock and refcount
+  dentry_operations d_op
+  super_block *d_sb
+  ...
+  d_iname[DNAME_INLINE_LEN] //small names
+}
+
+struct inode {
+  ...
+  list_head i_dentry
+  ...
+  uid_t i_uid
+  gid_t i_gid
+  ...
+  inode_operations *i_op
+  file_operations *i_fop
+  super_block *i_sb
+  wait_queue_head_t i_wait
+  ...
+  union {
+    ext2_inode_info ext2_i
+    ...
+    socket socket_i
+    void* generic_ip
+  }
+}
+
+4) VFS and PCBs
+---------------
+
+In PCB fs_struct *fs points to information related to the current directory.
+In this struct we have a pointer to root and pwd.
+
+Two processes with same pwd are using th same dentry (remeber the refcount).
+
+If a process remove the directory the VFS keeps the consistency.
+
+5) Operations
+-------------
+
+Superblock operations are function pointers to rountines that also give
+statistical info.
+
+ - alloc_inode
+ - read_inode
+ - write_inode
+ - put_inode , release the inode (refcount)
+ - statfs (statistics)
+ - write_super
+ - put_super , release the superblock (refcount)
+ - ...
+
+Dentry operations:
+
+ - delete , remove the pointed inode
+ - put , remove the dentry when refcount = 0
+ - ...
+
+Inode operations:
+
+ - create
+ - lookup
+ - link
+ - unlink
+ - symlink
+ - mkdir
+ - rmdir
+ - mknod
+
+6) Pathname Lookup
+------------------
+
+Very critical part, must be concurrent safe and permission safe.
+Must handle automount, namespaces, links loops.
+
+Everything based on nameidata structure. Main functions are vfs_path_lookup(),
+filename_path_lookup(), path_lookupat().
+
+Lookup flags are used for example create the endpoint of the lookup or
+allow automount.
+
+/filesystem/path-lookup.* are the file for the documentation in the source
+of the kernel.
+
+7) Syscalls
+-----------
+
+mount (MS_SYNCHRONOUS tell that all writes must be synchronous)
+Two dentry describe a mount point, the outer has the DCACHE_MOUNTED flags and
+it will skipped while tokenizing a pathname.
+
+In PCB we have a file_struct* files field that is the per-process file
+descriptor table. 
+
+struct files_struct {
+  atomic_t count
+  ...
+  fdtable __rcu *fdt
+  fdtable fdtab
+
+  spinlock_t file_lock ___cacheline_aligned_in_smp // avoid split cache lock
+  uint next_fd // last closed fd or last of the table if full
+  ...
+}
+
+struct fdtable {
+  uint max_fds
+  file __rcu **fd
+  ulong *close_on_exec
+  ulong *open_fds // bitmap
+  ...
+}
+
+There is also an intermediate table in VFS, different process can open the same
+file and points the fd to an entry here. This structure if struct file.
+
+do_sys_open() is splitted in two parts, the first allocate a file descriptor
+and then calls do_filp_open() that does a path lookup on the target pathname
+and returns the associated struct file.
+
+struct file {
+  path f_path
+  inode *f_inode
+  file_operations *f_op
+  ...
+
+  fmode_t f_mode
+  mutex f_pos_lock
+  loff_t f_pos
+  ...
+  cred *f_cred
+}
+
+Also, close calls put_unused_fd and then filp_close().
+
+In read()/write() syscall we start calling fdget_pos that acquires a lock to
+avoid race conditions.
+
+8) Proc & Sys
+-------------
+
+An in-memory filesystem that provides info about the OS.
+
+The core structure is proc_dir_entry.
+
+struct proc_dir_entry {
+  u16 low_ino
+  u16 name_len
+  char* name
+  ...
+}
+
+Sys FS is similar in spirit to proc. More clean, with simple I/O to these files
+we can set kernel configuration (e.g. ip forwarding).
+
+Very simple API:
+
+ - Kernel Objects: Directories
+ - Object Attributes: Files
+ - Object Relationships: Symbolic links
+
+sysfs_create_file, sysfs_remove_file, sysfs_update_file are the core API.
+
+struct attribute {
+  char* name
+  struct module *owner // subsystem or loadable kernel module descriptor
+  mode_t mode
+}
+
+kobject desribes (with refcount) the kernel object.
+
+Operation for kobject in sysfs are:
+
+struct sysfs_ops {
+  ssize_t (*show)(kobj, attr, buffer)
+  ssize_t (*store)(kobj, attr, buffer, size)
+}
+
+kset are high level facility to group kobjects. It inherits kobject.
+A circular double linked list.
+
+kobject are added to sysfs with kobject_add and kobject_del to avoid races.
+
+9) Devices
+----------
+
+Each device is associated to a MAJOR and a MINOR number.
+MAJOR is a key used by the kernel to access the associated driver (class of
+devices with same driver).
+MINOR indentifies the instance of single device (can be specified by the
+driver programmer).
+
+There are 2 major classes, char and block devices. The name is an hint of the
+minimum data type handled by the device.
+
+ls -l /dev/sda /dev/ttyS0
+
+Give us info about class, brw-... for block, crw... for char in the permissions.
+Before date there are also MAJOR, MINOR.
+
+lanana assign MAJOR numbers.
+
+The device database describe the devices. Two databases, cdev_map and bdev_map.
+
+struct kobj_map {
+  struct probe {
+    next
+    dev_t dev
+    module *owner
+    data
+  } *probes[255]
+  mutex lock
+}
+
+probes is na hashmap of 255 bucket accessed with MAJOR % 255.
+dev_t is a device number, a concatenation of MAJOR and MINOR, access with
+MAJOR(dev) and MINOR(dev) bitwise macros.
+
+Registering char devices needs to specify file_operations.
+
+UDEV handles userspace events raised when devices are added/removed.
+This is a system deamon in userspace that is notified by the kernel and calls
+mknod to create the file in /dev.
+
+
+
+
