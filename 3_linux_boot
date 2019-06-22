@@ -1,0 +1,117 @@
+1) Kernel Loading
+-----------------
+
+The stage 2 bootloader contiunously switch protected-real mode to load by
+pieces the image of the kernel in addresses not reachable in real mode.
+It uses always the mapped BIOS facilities.
+
+The first routine of Linux called is start_of_setup() (in real mode).
+This setup a stack, write 0 in BSS and then jumps to main().
+
+main loads the IDT address in IDTR. In real mode it was at address 0. 
+It then call setup_gdt() and jump to protected mode without paging.
+
+Now higher addresses are accessible and the kernel image is decompressed.
+
+Until now the Kernel replaced pieces of bootloader. Now the kernel or the
+bootloader calls the first uncompressed routing: startup_32().
+
+This routine determinates the actual prosition with a call/pop and call a
+second startup_32 function that build IDT, GDT and enables paging.
+
+Now it is the time to the architecture independent entry point: start_kernel().
+
+2) Early Paging
+---------------
+
+In details, before the setup of an useful page table the early setup is to load
+an hardcoded small page tables with only two entries that covers code, data and
+a bit of free buffers (8 MB). The variable is called swapped_pg_dir.
+PAGE OFFSET is used, a very minimalistic virtual to physical mapping
+(in 32 bit it adds 3 gb because in physical memory kernel starts at 0 and in
+virtual memory it starts at 3 gb).
+
+Now a more complex paging architecture must be setupped. The free biffers can
+be used to construct a new page table.
+
+The memory map of the kernel is known at linking time. A small mamroy manager,
+bootmem, is embedded at linking time an contains a bitmap that tells what 4kb
+frames are free (not in code or data). This bitmap can be also modified to
+get memory but only during this boot stage.
+
+The kernel will manage different classes of page tables.
+Each arch define macros that are combination of bits.
+
+In setup_arch() -> paging_init() ... the kernel allocate a new page table with
+chunks of 4 KB.
+
+In x86 the layout is:
+
+Page General Directory -> Page Middle Directory -> Page Table
+
+Without PAE PMD has only one entry.
+
+We are filling a page table with paging enables sfo irst of all we populate the
+low levevel page table.
+We must ensure that the entry in swapped_pg_dir must point to the same 4kb page
+in the low entry.
+
+This is not a real issue because the old page table is cahced in TLB and so,
+in the end, the TLB is flushed.
+
+Now the kernel goes to cpu_idle() waiting for interrupts/rescheduling.
+
+Note: the best tlb invalidation code for the arch must be selcted cause it can
+be costly.
+flush_tlb_all synchrinize all cores flush all with an high cost.
+flush_tlb_mm takes an mm struct used to describe an address space of a process.
+flush_tlb_page with only a specified page to be invalidated.
+There is also flush_tlb_range, useful when implementing mremap or mprotect.
+
+3) Flow
+-------
+
+PID 0 start_kernel() -> rest_init() ---------> cpu_idle()
+                            |
+                            v
+                     New kernel thread:
+                       kernel_init() -> schedule() [before cpu_idle]
+
+/sbin/init started in kernel_init thread. Several subsystems like VFS, devices
+management and interrupts must be initialized before calling init.
+
+/sbin/init is in the ramdisk.
+
+4) Init
+-------
+
+Init is KISS and spawn several services to do jobs like mount drives and network
+setup.
+
+Runlevels:
+
+ - 1 (S) single user
+ - 2 multiuser (no networking)
+ - 3 full multiuser
+ - 4 unused
+ - 5 X11
+ - 6 reboot
+ - 0 halt
+
+Scripts placed in /etc/init.d/
+In /etc/rc.d/rc#.d/ there are symlinks to init.d scripts ad custom scripts.
+S## start scripts, K## stop scripts.
+
+service <scriptname> <action>
+
+/etc/inittab format: id:runevel:action:process
+
+Systemd is based on the notion of "units" and "dependencies". Scripts are not
+in shell language. Runlevels are called targets.
+
+To change runlevel in System V Initi call init 1, in systemd change a symlink
+to the desired target.
+
+In systemd targets we have several section. Unit is a section with dependencies
+both positive and negative on other units. Service section describe what you
+want to do. Install section tells when the unit must be started.
