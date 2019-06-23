@@ -171,15 +171,15 @@ structure).
 In each page there are many objects.
 
 cache:
--->slabs_full:
----->slabs:
------->pages:
--------->object
--------->...
--------->object
--->slabs_partial:
+--> slabs_full:
+----> slabs:
+------> pages:
+--------> object
+--------> ...
+--------> object
+--> slabs_partial:
 ...
--->slabs_free:
+--> slabs_free:
 ...
 
 Each slab manages objects of the same size. Slab are moved to full/partial/free
@@ -198,4 +198,3 @@ Coloring is padding to ensure that an object is not splitted in L1 cache
 (so we avoid cache miss when traverse an entire object)
 
 So objects are L1 cache aligned. 
-

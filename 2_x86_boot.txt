@@ -190,4 +190,3 @@ The ICR register and the LAPIC controlled is used to send to all cores except
 itself an INIT-SIPI-SIPI interrupt.
 
 The LAPIC routes the request in the APIC bus.
-

@@ -13,3 +13,4 @@ single topic.
  4. Memory management
  5. System calls
  6. Loadable modules
+ 7. Interrupts and time
