@@ -2,10 +2,18 @@
 AOSV CheatShit
 ==============
 
-Written with <3 by Andrea Fioraldi <andreafioraldi@gmail.com>
+ ** Shitty notes of the Advanced Operating Systems and Virtualization course at
+    Sapienza University of Rome in shitty text files **
+
+    Written with <3 by Andrea Fioraldi <andreafioraldi@gmail.com>
 
 The material si divided in chapters and each chapter, in general, covers a
 single topic.
+
+Some topics that are for me obvious like the structure of GOT and PLT in the
+ELF are omitted, these notes are not a replacement for the course material.
+
+Table of contents:
 
  1. An introduction to x86
  2. The x86 boot process
@@ -16,3 +24,4 @@ single topic.
  7. Interrupts and time
  8. Concurrency
  9. Virtual File System and Devices
+ 10. Processes
