@@ -7,8 +7,8 @@ AOSV CheatShit
 
     Written with <3 by Andrea Fioraldi <andreafioraldi@gmail.com>
 
-The material si divided in chapters and each chapter, in general, covers a
-single topic.
+The material si divided in chapters and each chapter, in general, covers
+multiple related topics.
 
 Some topics that are for me obvious like the structure of GOT and PLT in the
 ELF are omitted, these notes are not a replacement for the course material.
