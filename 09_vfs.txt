@@ -6,21 +6,21 @@ Virtual File System and Devices
 ---------------
 
 VFS is a software layer which abstracts the actual implementation of devices
-and files. It is an uniform interface.
+and files. It is a uniform interface.
 
-The representation can be in RAM (full or partial) or in device (possibly
+The representation can be in RAM (full or partial) or in the device (possibly
 outdated before synchronization).
 
 There are 2 parts, the FS-independent part that is an interface towards other
 subsystems of the kernel and the FS-dependent part.
 
-Remeber, in UNIX everything is a file.
+Remember, in UNIX everything is a file.
 
 2) EXT2
 -------
 
 Index Node (inode) is a representation of a node of the tree hierarchy in the
-filesystem. Basically we have a table of inodes.
+filesystem. Basically, we have a table of inodes.
 
 Inode
 +-+-+-+-+
@@ -40,9 +40,9 @@ Inode
 +-+-+-+-+         +-+-+-+     +-+-+-+
                   ...         ...
 
-info are metadata, like permissions. First entries are for direct data blocks.
-When the file grow in size, the space in inode can be exausted and so the last
-blocks points to indirect data blocks (block of pointers).
+info is metadata, e.g. permissions. First entries are for direct data blocks.
+When the file grows in size, the space in inode can be exhausted and so the last
+blocks point to indirect data blocks (block of pointers).
 
 Multiple IO operation are needed to locate indirect data blocks and double
 indirect data blocks.
@@ -54,14 +54,14 @@ Inodes in VFS are a different thing than EXT2 inodes.
 
 VFS implements a caching of metadata of the filesystem geometry.
 
-dentry object is a generic abstraction of a node. It can represents folder,
+dentry object is a generic abstraction of a node. It can represent folder,
 file, links etc..
 
-For each dentry there is an asociated inode that describes the file from a
+For each dentry there is an associated inode that describes the file from a
 device point of view.
 
 dentry has only a child field, but if the dentry is a folder the child is a
-list of dentry. Each childern dentry has a parent field.
+list of dentry. Each child dentry has a parent field.
 
 file_system_type
     v
@@ -79,10 +79,10 @@ file_system_type
                   ^------------------------------------v
 
 A superblock is an instance of the actual filesystem, vfsmount is the instance
-of the filesystem mounted. There can be multiple vfsmount instance but only
+of the filesystem mounted. There can be multiple vfsmount instances but only
 a superblock for each device (a device can be mounted multiple times).
 
-In inode there can be pointers to frames in RAM that are cache for pieces of
+In inode there can be pointers to frames in RAM that are a cache for pieces of
 files.
 
 struct file_system_type {
@@ -94,13 +94,13 @@ struct file_system_type {
   list_head fs_supers
 }
 
-read_super is binded to the actual filesystem routine that reads the
+read_super is bound to the actual filesystem routine that reads the
 super block.
 
 rootfs is an empty root folder while the system is booting. It cannot be
 unmounted and this avoid to check for an empty list (like init does for
 the processes).
-During boot the kernel replace the mountpoint of rootfs.
+During boot the kernel replaces the mountpoint of rootfs.
 This is the entrypoint of the file_system_type list.
 
 struct vfsmount {
@@ -187,14 +187,15 @@ struct inode {
 In PCB fs_struct *fs points to information related to the current directory.
 In this struct we have a pointer to root and pwd.
 
-Two processes with same pwd are using th same dentry (remeber the refcount).
+Two processes with the same pwd are using the same dentry
+(remember the refcount).
 
-If a process remove the directory the VFS keeps the consistency.
+If a process removes the directory the VFS keeps the consistency.
 
 5) Operations
 -------------
 
-Superblock operations are function pointers to rountines that also give
+Superblock operations are function pointers to routines that also give
 statistical info.
 
  - alloc_inode
@@ -226,7 +227,7 @@ Inode operations:
 6) Pathname lookup
 ------------------
 
-Very critical part, must be concurrent, safe and permission safe.
+A very critical part. Must be concurrent, safe and permission safe.
 Must handle automount, namespaces, links loops.
 
 Everything based on nameidata structure. Main functions are vfs_path_lookup(),
@@ -242,8 +243,8 @@ of the kernel.
 -----------
 
 mount (MS_SYNCHRONOUS tell that all writes must be synchronous)
-Two dentry describe a mount point, the outer has the DCACHE_MOUNTED flags and
-it will skipped while tokenizing a pathname.
+Two dentry describes a mount point, the outer has the DCACHE_MOUNTED flags and
+it will be skipped while tokenizing a pathname.
 
 In PCB we have a file_struct* files field that is the per-process file
 descriptor table. 
@@ -270,7 +271,7 @@ struct fdtable {
 There is also an intermediate table in VFS, different process can open the same
 file and points the fd to an entry here. This structure if struct file.
 
-do_sys_open() is splitted in two parts, the first allocate a file descriptor
+do_sys_open() is split in two parts, the first allocate a file descriptor
 and then calls do_filp_open() that does a path lookup on the target pathname
 and returns the associated struct file.
 
@@ -307,7 +308,7 @@ struct proc_dir_entry {
 }
 
 Sys FS is similar in spirit to proc. More clean, with simple I/O to these files
-we can set kernel configuration (e.g. ip forwarding).
+we can set kernel configuration (e.g. IP forwarding).
 
 Very simple API:
 
@@ -323,9 +324,9 @@ struct attribute {
   mode_t mode
 }
 
-kobject desribes (with refcount) the kernel object.
+kobject describes (with refcount) the kernel object.
 
-Operation for kobject in sysfs are:
+Operations for kobject in sysfs are:
 
 struct sysfs_ops {
   ssize_t (*show)(kobj, attr, buffer)
@@ -340,23 +341,23 @@ kobject are added to sysfs with kobject_add and kobject_del to avoid races.
 9) Devices
 ----------
 
-Each device is associated to a MAJOR and a MINOR number.
+Each device is associated with a MAJOR and a MINOR number.
 MAJOR is a key used by the kernel to access the associated driver (class of
-devices with same driver).
-MINOR indentifies the instance of single device (can be specified by the
+devices with the same driver).
+MINOR identifies the instance of a single device (can be specified by the
 driver programmer).
 
-There are 2 major classes, char and block devices. The name is an hint of the
+There are 2 major classes, char and block devices. The name is a hint of the
 minimum data type handled by the device.
 
 ls -l /dev/sda /dev/ttyS0
 
 Give us info about class, brw-... for block, crw... for char in the
-permissions. Before the date field there are also MAJOR and MINOR.
+permissions. Before the date field, there are also MAJOR and MINOR.
 
 lanana assign MAJOR numbers.
 
-The device database describe the devices. Two databases, cdev_map and bdev_map.
+The device database describes the devices. Two databases, cdev_map and bdev_map.
 
 struct kobj_map {
   struct probe {
@@ -368,14 +369,14 @@ struct kobj_map {
   mutex lock
 }
 
-probes is an hashmap of 255 buckets accessed with MAJOR % 255.
+probes is a hashmap of 255 buckets accessed with MAJOR % 255.
 dev_t is a device number, a concatenation of MAJOR and MINOR, access with
 MAJOR(dev) and MINOR(dev) bitwise macros.
 
 Registering char devices needs to specify file_operations.
 
 UDEV handles userspace events raised when devices are added/removed.
-This is a system deamon in userspace that is notified by the kernel and calls
+This is a system daemon in userspace that is notified by the kernel and calls
 mknod to create the file in /dev.
 
 UDEV is based on rules stored in the /etc/udev/rules.d folder. An example is
