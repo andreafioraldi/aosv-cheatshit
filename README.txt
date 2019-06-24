@@ -7,7 +7,7 @@ AOSV CheatShit
 
     Written with <3 by Andrea Fioraldi <andreafioraldi@gmail.com>
 
-The material si divided in chapters and each chapter, in general, covers
+The material is divided into chapters and each chapter, in general, covers
 multiple related topics.
 
 Some topics that are for me obvious like the structure of GOT and PLT in the
@@ -39,7 +39,7 @@ Table of contents
   
  4  - Memory management
       4.1  - Numa nodes
-      4.2  - Zones intialization
+      4.2  - Zones initialization
       4.3  - High memory
       4.4  - Reclaiming boot memory
       4.5  - Allocation context
