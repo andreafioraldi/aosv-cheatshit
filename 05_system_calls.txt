@@ -20,7 +20,7 @@ Syscall handler invoked with an indirect call.
 
 Dispatcher -> Syscall handler -> Dispatcher -> Iret
 
-Iret also restore the original CPL.
+Iret also restores the original CPL.
 
 Standard macros in include/asm-xx/unistd.h let userspace to access the gate.
 There is a macro for each range of parameters, from 0 to 6.
@@ -39,7 +39,7 @@ sysenter (SYSENTER_CS_MSR, SYSENTER_EIP_MSR, SYSENTER_ESP_MSR).
 sysret sets eip to the value in edx and esp to the value in ecx, so edx and ecx
 are clobbered.
 
-In x86_64 we have syscall. It uses different set of MSR respect to sysenter.
+In x86_64 we have syscall. It uses a different set of MSR respect to sysenter.
 MSR_STAR used to set CS for kernel and user.
 MSR_LSTAR used to set syscall dispatcher address.
 
@@ -47,7 +47,7 @@ vDSO shared library part of kernel code space.
 It implements all the facilities of the kernel that wants to be executed in
 userspace.
 vDSO base addr can be getted using auxiliary elf header. (getauxval()).
-Many routines does not require kernel mode and are served in vDSO to avoid
+Many routines do not require kernel mode and are served in vDSO to avoid
 context switch (e.g. gettimeofday()).
 _kernel_vsyscall() is used to select the fastest path to syscall. If sysenter
 fails it fallbacks to int 0x80.
@@ -55,7 +55,7 @@ fails it fallbacks to int 0x80.
 3) Syscalls table
 -----------------
 
-In the kernel source there is a text file that maps name to addresses and it
+In the kernel source, there is a text file that maps name to addresses and it
 is used to generate the table with a shell script.
 
 syscall_64.tbl
@@ -106,12 +106,12 @@ VDSO:
 
 call *%gs:0x10
 
-In GS segmente register the kernel puts an address of a structure.
+In GS segment register the kernel puts an address of a structure.
 
 Enter in the same code path, __kernel_vsyscall, and use sysenter.
 
 sysret needs that the kernel must switch back to the userspace stack before
-before executing the instruction. This open a window for a race condition with
+ executing the instruction. This open a window for a race condition with
 NMI handlers and in fact TSS now has entries for private stacks for NMI
 handlers.
 
@@ -132,7 +132,7 @@ Forcing taking branch in kernel code.
 
 pt->rax = syscall_table[nr](pt) is critical in kernel code.
 
-retpoline transform a call that depends on data in a safe way for spectre.
+The retpoline transform a call that depends on data in a safe way for Spectre.
 
 In particular for syscall_table[nr](pt) (r?x managed by register allocation):
 
@@ -152,7 +152,7 @@ Uses retaddr replace of the first call to the target location.
 The branch prediction can now take only two choices: correct ret value of the
 incorrect, that is label 1.
 
-If CPU misspeculate, it will go in a infinite loop of lfence :)
+If CPU misspeculate, it will go in an infinite loop of lfence :)
 
 We can compile the kernel to not use this, the macro is CONFIG_RETPOLINE.
 
@@ -166,4 +166,4 @@ with a different handler.
 
 Deprecated or not implemented syscalls must fail.
 
-The address os sys_ni_syscall can be getted with a kprobe.
+The address os sys_ni_syscall can be got with a kprobe.
