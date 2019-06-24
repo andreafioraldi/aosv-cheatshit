@@ -5,27 +5,27 @@ Virtualization and Containers
 1) Hypervisors
 --------------
 
- - Native: runs base metal
+ - Native: runs bare metal
  - Hosted: runs as an application, access host services via syscalls
 
 An x86 CPU has no notion of virtualized environment, some instruction must be
 emulated.
-For example if a guest modify the register that points to page table it also
-modifies the host state.
+For example, if a guest modify the register that points to the page table it
+also modifies the host state.
 
-Ring deprivileging is nedded.
+Ring deprivileging is needed.
 Running kernel guest at ring 1 is the most used (013 model).
 Running kernel guest at ring 3 (033 model) is too close to emulation, it is
 costly.
 
-Ring 1 has not access to all instructions. Ring 1 is also buggy, some
+Ring 1 cannot access all instructions. Ring 1 is also buggy, some
 instruction that should not be allowed in ring 1 are allowed.
 popf for example always succeed at ring 1, so interrupts can be disabled from
 guest.
 
 The VMM must be able to recognize which guest kernel generated a trap.
 The VMM must virtualize interrupts.
-The VMM must manage the frequest access of guest to privileged resources.
+The VMM must manage the request for access of guest to privileged resources.
 
 In x86_64 we have hardware assisted virtualization, in x86 is all at software
 level.
@@ -36,9 +36,9 @@ level.
 Some instructions generate an exception if not at ring 0.
 E.g. hlt, lidt, lgdt, invd, mox crX ...
 
-The genrated trap must be handled by the VMM.
+The generated trap must be handled by the VMM.
 
-Those instruction can be replaced lifting the bytecode and recompiling.
+Those instructions can be replaced lifting the bytecode and recompiling.
 
 Guest context has two modes:
  - Raw mode: native guest runs ar ring 1 or 3
@@ -48,14 +48,14 @@ Host context is the execution context for userspace portions of the VMM.
  - The running thread of the VM run in this context upon a mode change.
  - Emulation of critical instructions is handled here
 
-The kernel must be aware of virtualization, for example VirtualBox modify the
-GDT to use the ring1 entry of TSS. It also replace the gate 80h handler with a
+The kernel must be aware of virtualization. For example, VirtualBox modify the
+GDT to use the ring1 entry of TSS. It also replaces the gate 80h handler with a
 dispatcher that routes the interrupt to the guest if needed.
 
 3) Paravirtualization
 ---------------------
 
-VMM offers a virtual interface avaiable to guests: hypercalls.
+VMM offers a virtual interface available to guests: hypercalls.
 
 To run privileged instructions the guests, when it knows that is running
 virtualized, runs hypercalls.
@@ -66,10 +66,10 @@ virtualized, runs hypercalls.
 Intel Vanderpool Technology, VT-x, eliminates the need of software based
 virtualization.
 
-Solved problems: Ring comrpession, non-trapping instructions (popf) and
+Solved problems: Ring compression, non-trapping instructions (popf) and
 excessive trapping.
 
-Virtual Machine Extension define the support for VMs on x86 using VMX
+Virtual Machine Extension defines the support for VMs on x86 using VMX
 operations.
 
 Kinds of VMX operations:
@@ -81,30 +81,30 @@ VM Entry is the transition to VMX non-root operation, VM Exit is the transition
 to root operation. Registers and address space are swapped in one atomic
 operation!
 
-VMX Root is a special ring, all priviledges of rings 0 plus the possibility to
-switch VMX operations. Now also guests runs at ring 0.
+VMX Root is a special ring, all privileges of rings 0 plus the possibility to
+switch VMX operations. Now also guests run at ring 0.
 
-VMCS (Virtual Machine Constrol Structure) is a data structure used to manage
+VMCS (Virtual Machine Control Structure) is a data structure used to manage
 VMX non-root operation and transitions. 
 
   - Guest state area, saved CPU state
   - Host state area
-  - VM execution control fields, for example which core is exposed to VM
+  - VM execution control fields (for example, which core is exposed to VM)
   - VM exit control fields
   - VM entry control fields
   - VM exit information fields, read-only fields that describe the reason of a
-    VM exit (like guets crash)
+    VM exit (like guest crash)
 
 First generation VT-x forces TLB flushes each VMX transitions.
 
 Now there is the VPID, a 16-bit virtual processor ID field in VMCS.
 In TLB linear translations are cached with VPID so TLB entries of different VMs
-can coexists in the TLB.
+can coexist in the TLB.
 
 Virtual Address Space -> Physical Address Space (Virtual RAM) ->
 Machine Address Space (RAM).
 
-Also physical address spaces are virtual for guests.
+Also, physical address spaces are virtual for guests.
 
 To handle this additional translation there are several options:
 
@@ -112,23 +112,23 @@ To handle this additional translation there are several options:
    This page table id read-only, when the guest change it a trap is generated.
    This is done to synchronize guest page table with shadow page table.
    There is a virtual CR3. When guest change the virtual CR3, the real CR3 will
-   points to the corrispondent shadow page table.
+   points to the correspondent shadow page table.
 
- - Nested/Extended Page Table, translate physiscal address in VMX non-root using
-   and intermediate set of tables. Very costly TLB miss.
+ - Nested/Extended Page Table, translate physical address in VMX non-root using
+   an intermediate set of tables. Very costly TLB miss.
 
 5) Kernel Samepage Merging
 --------------------------
 
-COW is traditionally used to share physiscal frames. Between virtual machines,
+COW is traditionally used to share physical frames. Between virtual machines,
 save space in this way is difficult.
 
 KSM exposes the /dev/ksm pseudofile, with ioctl calls programmers can register
 portions of address spaces.
 
-Windows guests writes 0 in newly allocated pages and this is a watse of pages.
+Windows guests write 0 in newly allocated pages and this is a waste of pages.
 
-Registering the VMM to KSM all pages are scanned and hashed, when an hash
+Registering the VMM to KSM all pages are scanned and hashed, when a hash
 collide they are mapped to a physical frame and COW protected.
 
 6) Containers mechanisms
@@ -147,8 +147,8 @@ collide they are mapped to a physical frame and COW protected.
 
 In sysfs there is a mount point to a new filesystem type, cgroup: /sys/fs/cgroup
 
-The subfolders describe what can be done with the resource of the folder,
-for example there are the cpu and mem folders.
+The subfolders describe what can be done with the resource of the folder.
+For example, there are the CPU and mem folders.
 
 In each task_struct there is a pointer to a css_set group and task_struct are
 also linked list items for each cgroup.
@@ -209,8 +209,8 @@ struct cred {
   user_ns
 }
 
-A new net namespace only include lo device. A network device belongs only to a
-namespace. A virtual device should be created and communicate with real device
+A new net namespace only includes lo device. A network device belongs only to a
+namespace. A virtual device should be created and communicate with a real device
 using the network stack.
 
-struct pid links togheter pids in a namespace.
+struct pid links together the pids in a namespace.
