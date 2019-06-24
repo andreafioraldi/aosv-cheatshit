@@ -16,18 +16,18 @@ Each process table entry is a PCB.
  - ...
  - Other flags
 
-Lightweigth process have small PCBs (for threads).
+Lightweight processes have small PCBs (for threads).
 
-In Linux there is an opoosite view. PCB is called task_struct. Everything is a
+In Linux, there is an opposite view. PCB is called task_struct. Everything is a
 task and there are no differences between processes and threads.
 
-This is one of the largest structures in the kernel, we discuss of the most 
+This is one of the largest structures in the kernel, we discuss the most 
 relevant fields.
 
 long state is the state of the task (running, zombie etc...).
 
-Memory maps are pointers (mm_struct*) and so different task can share address
-space just assigning a pointer.
+Memory maps are pointers (mm_struct*) and so different task can share the
+address space just assigning a pointer.
 
 struct mm_struct* mm
 struct mm_struct* active_mm
@@ -41,7 +41,7 @@ the userspace process.
 pid_t pid is the identifier of the kernel task (different from userspace pid).
 pid_t tgid is the thread group id (a process id in userspace).
 
-For the thread 0 of a process pid == tgid.
+For thread 0 of a process pid == tgid.
 
 struct fs_struct* fs
 struct files_struct* files
@@ -64,12 +64,12 @@ cpumask_t cpus_allowed for e.g. numa stuffs.
 2) MM member
 ------------
 
-In mm_struct there is a memeber called pgd that maintains the first level of the
+In mm_struct there is a member called pgd that maintains the first level of the
 page table. To schedule a process we write to CR3 current->mm->pgd. Each new
 process has its own page table.
 
 After pgd there is a list called vm_area_struct in which each entry is a
-contiguos virtual area that can be served to user via mmap.
+contiguous virtual area that can be served to user via mmap.
 
 vm_ops are for handling special allocation/deallocation like mmapped files.
 
@@ -81,30 +81,30 @@ If a process wants to finish the RAM the kernel, before that, kills it.
 Up to 2.6 PCB is allocated at the bottom of the kernel level stack associated
 to the process.
 
-In 2.6 the devs put a thread_info struct with a pointer to PCB insted of the PCB
-at the bottom of the stack.
+In 2.6 the devs put a thread_info struct with a pointer to PCB instead of the
+PCB at the bottom of the stack.
 
 Many fields from thread_info were removed in 4.3.
 
-In 3.19 for exmaple in thread_info there is the addr_limit field that can be
+In 3.19 for example in thread_info there is the addr_limit field that can be
 hijacked to allow userspace to read kernel memory (using copy_from_user) and the
-restart_block that constains a function pointer called by the restart() syscall.
+restart_block that contains a function pointer called by the restart() syscall.
 
-Stack was phisically contiguos memory via kmalloc but then this changed and now
+Stack was physically contiguous memory via kmalloc but then this changed and now
 the stack is virtually mapped using vmalloc (slower than kmalloc).
 thread_info no more in stack.
 There is a caching system running on top of vmalloc that is slow to create a
 new kernel level stack.
 
-current is a macro that evaluated to the current scheduled task_struct.
-Early version of the macro did computation based on the SP value.
+current is a macro that evaluated to the currently scheduled task_struct.
+The early version of the macro did computation based on the SP value.
 Now it is a function that reads a pre-CPU variable.
 
 find_task_by_pid find a task_struct given a pid.
 In 2.6.26 replaced by find_task_by_vpid based on virtual pids. Virtual pids
-allows two process to have the same pids in different namespaces.
+allows two processes to have the same pid in different namespaces.
 
-Currently, PCB are find not using an hashtable anymore but with a radix tree.
+Currently, PCB are found not using a hashtable anymore but with a radix tree.
 
 4) Process and thread creation
 ------------------------------
@@ -113,11 +113,11 @@ Userspace:   fork()      pthread_create() -> clone()
                |                                |
 Kernel:      sys_fork ----> do_fork() <----- sys_close()
 
-In Linux, kernel should never (at except for process creation) allocate memory
-for userspace.
-On thread creation the new thread stack must be allocated by userspace.
+In Linux, the kernel should never (at except for process creation) allocate
+memory for userspace.
+On thread creation, the new thread stack must be allocated by userspace.
 A pointer to the new stack must be passed to clone(), also the new TLS.
-The kernel must properly set %fs when scheduing the thread so that the access
+The kernel must properly set %fs when scheduling the thread so that the access
 to thread local variables is consistent.
 
 Common clone_flags are:
@@ -142,7 +142,7 @@ calls.
 ----------------
 
 The execve syscall wipes out the memory state, find the executable in the
-filesystem and do not change most of other fileds of PCB.
+filesystem and do not change most of the other fields of PCB.
 
 struct linux_binprm {
   char buf[]
@@ -153,14 +153,14 @@ struct linux_binprm {
   ...
 }
 
-do_execve() open the binary file, set the top to a value proportional to number
-of arguments, set serguments, filename and other stuff on the stack of the new
-program.
+do_execve() open the binary file, set the top to a value proportional to the
+number of arguments, set arguments, filename and other stuff on the stack of the
+new program.
 
 Then search_binary_handler is called to match the binary image to a function
 that can handle it. If something goes wrong all is freed.
 
-If search_binary_handler can not find an interpreter ENOEXEC is returned.
+If search_binary_handler cannot find an interpreter ENOEXEC is returned.
 
 For ELFs, load_elf_binary() is called. It loads the image via mmap, reads the
 header (from \x7fELF) and set permissions.
