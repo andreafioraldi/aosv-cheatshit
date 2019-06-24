@@ -2,7 +2,7 @@
 The Linux specific boot process
 ===============================
 
-1) Kernel Loading
+1) Kernel loading
 -----------------
 
 The stage 2 bootloader contiunously switch protected-real mode to load by
@@ -25,7 +25,7 @@ second startup_32 function that build IDT, GDT and enables paging.
 
 Now it is the time to the architecture independent entry point: start_kernel().
 
-2) Early Paging
+2) Early paging
 ---------------
 
 In details, before the setup of an useful page table the early setup is to load
@@ -72,8 +72,8 @@ flush_tlb_mm takes an mm struct used to describe an address space of a process.
 flush_tlb_page with only a specified page to be invalidated.
 There is also flush_tlb_range, useful when implementing mremap or mprotect.
 
-3) Flow
--------
+3) The flow
+-----------
 
 PID 0 start_kernel() -> rest_init() ---------> cpu_idle()
                             |

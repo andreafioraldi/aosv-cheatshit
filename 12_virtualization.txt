@@ -30,7 +30,7 @@ The VMM must manage the frequest access of guest to privileged resources.
 In x86_64 we have hardware assisted virtualization, in x86 is all at software
 level.
 
-2) Ring Aliasing
+2) Ring aliasing
 ----------------
 
 Some instructions generate an exception if not at ring 0.
@@ -60,7 +60,7 @@ VMM offers a virtual interface avaiable to guests: hypercalls.
 To run privileged instructions the guests, when it knows that is running
 virtualized, runs hypercalls.
 
-4) Hardware Assisted
+4) Hardware assisted
 --------------------
 
 Intel Vanderpool Technology, VT-x, eliminates the need of software based
@@ -131,7 +131,7 @@ Windows guests writes 0 in newly allocated pages and this is a watse of pages.
 Registering the VMM to KSM all pages are scanned and hashed, when an hash
 collide they are mapped to a physical frame and COW protected.
 
-6) Containers Mechanisms
+6) Containers mechanisms
 ------------------------
 
  - Cgroups: manage resources for groups of processes.

@@ -2,7 +2,7 @@
 The x86 boot process
 ====================
 
-1) Initial Stage
+1) Initial stage
 ----------------
 
 After the hardware power setup the system is very basic:
@@ -87,7 +87,7 @@ stage1_starts:
 After this process the bootloader cannot load the kernel taht is on disk, so
 a stage 2 is needed.
 
-4) Protected Mode
+4) Protected mode
 -----------------
 
 In protected mode segments are not just numbers but indexes in the Segment
@@ -161,7 +161,7 @@ In x86_64 bits 49 - 64 are short circuited. PAE is extended with a Page
 General Directory (PGD). In the entries there is the XD bit to say if a page
 is executable or not.
 
-6) x64 LongMode
+6) x64 Longmode
 ---------------
 
 Gates for ring 3-0 are not used and the switch is more efficient.
@@ -180,7 +180,7 @@ UEFI is completely different, the main features are:
  - The GUID Partition Table
  - Secure boot (the image of the OS is signed)
 
-8) Cores Wakeup
+8) Cores wakeup
 ---------------
 
 Untile now only a core worked. To wakeup other cores an Inter-Processor

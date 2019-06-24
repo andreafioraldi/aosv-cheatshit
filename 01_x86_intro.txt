@@ -2,7 +2,7 @@
 An Introduction to x86
 ======================
 
-1) Branch Prediction
+1) Branch prediction
 --------------------
 
 Conditional branches are around 20% of the instructions in the code.
@@ -37,7 +37,7 @@ For ret instruction there is the return address stack buffer.
 The fetch both targets technique is a possibility but does not help with
 multiple targets (e.g. switches).
 
-2) Hyper Threading
+2) Hyper-threading
 ------------------
 
 A copy of the architectural state among each logical core. Less hardware
@@ -73,7 +73,7 @@ In the Intel case there is a division in the architecture:
    The retirement stage commits the microarchitectural stage to the
    architectural stage. Store operations here are written to L1 cache.
 
-3) Multi Core
+3) Multi-core
 -------------
 
 The Cache Coherence define the correct behaviour of the caches regardless how
@@ -162,6 +162,5 @@ to the same physical address. On cache write only one of them is updated.
 ASID here are not usefule, the cache should be flushed on context switch or
 an hardware system to detect the problem or resticting the mapping so that
 shared memories maps on the same cache line.
-
 
 

@@ -42,7 +42,7 @@ For some     | lock-free |                  | deadlock-free
 For some is problematic, is not strictly related to my code but to the
 offered scheduling.
 
-2) Concurrent and Preemtive Kernels
+2) Concurrent and preemtive kernels
 -----------------------------------
 
 Everything in the OS is a task. A modern OS is also concurrent.
@@ -57,7 +57,7 @@ Typical solutions are:
  - Interrupt disabling
  - Preemption disabling
 
-3) Race Condition Example
+3) Race condition example
 -------------------------
 
 my_syscall() {
@@ -74,7 +74,7 @@ my_syscall() {
 3. n is again 1
 4. 2 pops of a queue with len = 1
 
-4) Enable/Disable
+4) Enable/disable
 -----------------
 
 preemt_disable() increments per-CPU counter.
@@ -101,7 +101,7 @@ local_irq_restore(flags)  [push flags + popf]
 get and put macros of per-CPU vars disable and enbale preemption for us.
 per-CPU variables and rescheduling on another core are not good friends.
 
-5) Atomic Operations
+5) Atomic operations
 --------------------
 
 atomic_t type and atomic_fetch_{add,sub,...} implements RMW instructions.
@@ -121,7 +121,7 @@ Out of order pipeline can reorder memory access, use memory barriers:
   - {smp_}rmb(): reads mem barrier
   - {smp_}wm(): writes mem barrier
 
-7) Mutex and Spinlocks
+7) Mutex and spinlocks
 ----------------------
 
 The terminology is that down and up are wait and signal.

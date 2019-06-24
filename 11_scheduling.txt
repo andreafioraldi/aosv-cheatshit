@@ -72,7 +72,7 @@ add_wait_queue_exclusive() to use it.
 All tasks with the exclusive flag are at the end of the list to ensure that
 there is not interleaving between the two types of entries.
 
-4) Entry Point
+4) Entry point
 --------------
 
 schedule() is the scheduler entry point and is composed by 3 phases:
@@ -142,7 +142,7 @@ Favors interactive processes rather CPU bound ones.
 Complete fair scheduler (default from 2007) uses a red-black tree where nodes
 are ordered by execution time (nanoseconds, HRT). 
 
-7) Context Switch
+7) Context switch
 -----------------
 
 switch_to(next, prev, last) macro is machine dependant. In x86 mainly:

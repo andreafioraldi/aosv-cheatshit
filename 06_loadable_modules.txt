@@ -2,8 +2,8 @@
 Loadable modules
 ================
 
-1) Init
--------
+1) Initialization
+-----------------
 
 LICENSE macro used to expose reduced facilities if not GPL.
 MODULE_AUTHOR

@@ -61,7 +61,7 @@ ulong policy for the scheduler.
 int nr_cpus_allowed
 cpumask_t cpus_allowed for e.g. numa stuffs.
 
-2) MM Member
+2) MM member
 ------------
 
 In mm_struct there is a memeber called pgd that maintains the first level of the
@@ -75,7 +75,7 @@ vm_ops are for handling special allocation/deallocation like mmapped files.
 
 If a process wants to finish the RAM the kernel, before that, kills it.
 
-3) PCB Location
+3) PCB location
 ---------------
 
 Up to 2.6 PCB is allocated at the bottom of the kernel level stack associated
@@ -106,7 +106,7 @@ allows two process to have the same pids in different namespaces.
 
 Currently, PCB are find not using an hashtable anymore but with a radix tree.
 
-4) Process and Thread Creation
+4) Process and thread creation
 ------------------------------
 
 Userspace:   fork()      pthread_create() -> clone()
@@ -138,7 +138,7 @@ kthreads are stopped at creation and must be activated with wake_up_process().
 In task_struct there is the signal_mask. Signals are delivered at end of system
 calls.
 
-5) Program Start
+5) Program start
 ----------------
 
 The execve syscall wipes out the memory state, find the executable in the

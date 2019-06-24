@@ -47,7 +47,7 @@ blocks points to indirect data blocks (block of pointers).
 Multiple IO operation are needed to locate indirect data blocks and double
 indirect data blocks.
 
-3) VFS Global Organization
+3) VFS global organization
 --------------------------
 
 Inodes in VFS are a different thing than EXT2 inodes.
@@ -223,7 +223,7 @@ Inode operations:
  - rmdir
  - mknod
 
-6) Pathname Lookup
+6) Pathname lookup
 ------------------
 
 Very critical part, must be concurrent, safe and permission safe.

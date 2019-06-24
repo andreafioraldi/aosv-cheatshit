@@ -2,7 +2,7 @@
 Memory management
 =================
 
-1) Numa Nodes
+1) Numa nodes
 -------------
 
 Numa node are organized in pglist_data structs, pg_data_t is the typedef.
@@ -70,7 +70,7 @@ To request a block request we traverse starting from 0 to MAX_ORDER.
 
 !!! We need sync for this, in fact in zone_t there is a spinlock.
 
-3) High Memory
+3) High memory
 --------------
 
 This is not a permament mapping.
