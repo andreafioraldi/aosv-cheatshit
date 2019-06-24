@@ -26,4 +26,4 @@ Table of contents:
   9. Virtual File System and Devices
  10. Processes
  11. Scheduling
- 12. Virtualization
+ 12. Virtualization and Containers
