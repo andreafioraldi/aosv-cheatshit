@@ -8,7 +8,7 @@ The x86 boot process
 After the hardware power setup the system is very basic:
 
  - No caches
- - MMu disabled
+ - MMU disabled
  - CPU in Real Mode
  - Only one core
  - Empty RAM
@@ -22,36 +22,36 @@ There are 4 basic 16 bit segment registers:
 
 FS and GS added later.
 
-All instructions that uses memory access segments.
-For example jump uses cs implicitly, push uses ss implicitly.
+All instructions that use memory access segments.
+For example, jump uses cs implicitly, push uses ss implicitly.
 Segment registers can be loaded with mov but CS only with call/jmp.
 
-In Real Mode there are 20 bits addresses (1 MB address space). The address in
-segments is the 16 bits higerh part.
+In Real Mode, there are 20 bits addresses (1 MB address space). The address in
+segments are the 16 bits higher part.
 The translation is done with: Segment selector * 16 + offset.
 
 E.g. jmp 0x6025 with CS = 0x1000 ---> 0x16025
 
-Addresses can overlaps and the format is 0000:0000. Some addresses can be
+Addresses can overlap and the format is 0000:0000. Some addresses can be
 represented but not handled (> 20 bits) and teh last usable address is
 000f:ffff.
 
-For compability the address space can wrappend-around.
+For compatibility the address space can wrappend-around.
 Address line 20 is forced to 0.
 
 2) BIOS
 -------
 
-The first fected address is f000:fff0 and called reset vector. This is mapped to
-ROM, the BIOS.
-In this address there is a ljmp that sets CS.
+The first fetched address is f000:fff0 and called reset vector. This is mapped
+to a ROM, the BIOS.
+In this address, there is a ljmp that sets CS.
 
 The BIOS performs several steps:
 
- - Map routines to write on screen.
+ - Map routines to write on the screen.
  
- - POST phase, depends on BIOS implementation. Check RAM consinstency, test
-   devices like keyboard and intialize video card.
+ - POST phase (depends on BIOS implementation): Check RAM consistency, test
+   devices like keyboard and initialize video card.
    
  - The configuration is loaded from a CMOS (e.g. boot order).
  
@@ -63,11 +63,11 @@ The BIOS performs several steps:
 3) Stage 1
 ----------
 
-This bootlader must be in the first sector of the disk, the MBR. Here there is
+This bootloader must be in the first sector of the disk, the MBR. Here there is
 also the partition table.
-The avaiable memory is 640 kb.
+The available memory is 640 kb.
 
-At high level, the MBR is the following:
+At a high level, the MBR is the following:
 
   jmp stage1_start
   ...
@@ -75,7 +75,7 @@ At high level, the MBR is the following:
   ...
 stage1_starts:
   cli
-  set all segs to 0 (excpet CS that is already 0 and cannot be assigned)
+  set all segs to 0 (except CS that is already 0 and cannot be assigned)
 
   Enable address A20 to enlarge addresses using the 8042 keyboard controller.
   
@@ -84,8 +84,8 @@ stage1_starts:
   
   Setup stack.
 
-After this process the bootloader cannot load the kernel taht is on disk, so
-a stage 2 is needed.
+After this process the bootloader cannot load the kernel that is on disk, so
+stage 2 is needed.
 
 4) Protected mode
 -----------------
@@ -94,19 +94,19 @@ In protected mode segments are not just numbers but indexes in the Segment
 Descriptor Table.
 
 There are 2 tables, the Global Descriptor Table pointed by the GDTR register
-and the Local Descriptor Table pointed by LDTR (not used anymode).
+and the Local Descriptor Table pointed by LDTR (not used anymore).
 
-Each segment selector contains the index to this tables, a bit to say that
-if it is referred to GDT of LDT and the Requested Proviledge Level (RPL).
+Each segment selector contains the index to these tables, a bit to say that
+if it is referred to GDT of LDT and the Requested Privilege Level (RPL).
 
 Address resolution is done with *(GDTR + index * 8) + offset. Now
 *(GDTR + index * 8) is always 0 but segmentation can't be disabled.
 
-Each descriptor entry in the table has a Destination Priviledge Level (DPL).
-It describes the priviledge level associated with the descriptor.
+Each descriptor entry in the table has a Destination Privilege Level (DPL).
+It describes the privilege level associated with the descriptor.
 
-The Reqested Priviledge Level is present only in data segemnts (DS and SS)
-and the Current Priviledge Level (CPL) is in CS and so can be seeted only
+The Requested Privilege Level is present only in data segments (DS and SS)
+and the Current Privilege Level (CPL) is in CS and so can be set only
 with a jmp/call.
 
 To load a segment the following formula must be true:
@@ -115,20 +115,20 @@ To load a segment the following formula must be true:
 
 Note that RPL can be > CPL.
 
-Gate descriptors are used to get higher priviledges (setting a proper DPL).
+Gate descriptors are used to get higher privileges (setting a proper DPL).
 
 Gate descriptors are firmware facilities to define target code that can be
-reached from user space.
-Thoses descriptor are referenced by the Interrupt Descriptors Table, pointed by
+reached from userspace.
+Those descriptors are referenced by the Interrupt Descriptors Table, pointed by
 IDTR reg.
 With the TRAP gate type the handler are located.
 
 In Linux in the GDT there are we different code segments and data segments for
 kernel and user. One GDT per core but they are almost the same. The only
-entries that change are LDT and TSS.
+entries that changes are LDT and TSS.
 
 The TSS is the Task State Segment. It maintains a copy of the CPU state
-and pointer to different priviledge levels associated stacks.
+and pointers to different privilege levels associated stacks.
 DPL is 0, only kernel mode.
 
 TSS on x64 is completely different. We still have stack pointers but no more
@@ -145,8 +145,8 @@ The linear address now is:
 
  32 - 22 Directory | 21 - 12 Table | 11 - 0 Offset
 
-The schema is tha the Page Directory give an entry of the Page Table and the
-offset is used to get the physycal address inside the table.
+The schema is that the Page Directory gives an entry of the Page Table and the
+offset is used to get the physical address inside the table.
 
 Each page table entry has a PRESENT bit, is 0 a trap is generated.
 
@@ -154,11 +154,11 @@ TLB cache paging mapping.
 
 The address of the Page Directory is stored in CR3.
 
-Physical Address Entension allow to address more than 4 GB of memory and adds
-the Page pointer directory table as first level.
+Physical Address Extension allows to address more than 4 GB of memory and adds
+the Page pointer directory table as the first level.
 
-In x86_64 bits 49 - 64 are short circuited. PAE is extended with a Page
-General Directory (PGD). In the entries there is the XD bit to say if a page
+In x86_64 bits 49 - 64 are short-circuited. PAE is extended with a Page
+General Directory (PGD). In the entries, there is the XD bit to say if a page
 is executable or not.
 
 6) x64 Longmode
@@ -180,11 +180,11 @@ UEFI is completely different, the main features are:
  - The GUID Partition Table
  - Secure boot (the image of the OS is signed)
 
-8) Cores wakeup
----------------
+8) Cores wake up
+----------------
 
-Untile now only a core worked. To wakeup other cores an Inter-Processor
-Interrupt is sended.
+Until now only a core worked. To wake up other cores an Inter-Processor
+Interrupt is sent.
 
 The ICR register and the LAPIC controlled is used to send to all cores except
 itself an INIT-SIPI-SIPI interrupt.

@@ -29,7 +29,7 @@ Table of contents
       2.5  - Paging
       2.6  - x64 Longmode
       2.7  - UEFI
-      2.8  - Cores wakeup
+      2.8  - Cores wake up
   
  3  - The Linux specific boot process
       3.1  - Kernel loading
