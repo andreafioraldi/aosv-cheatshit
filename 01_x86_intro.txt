@@ -7,9 +7,9 @@ An Introduction to x86
 
 Conditional branches are around 20% of the instructions in the code.
 
- - Dynamic branch predition, implemented in hardware and based on history
+ - Dynamic branch prediction, implemented in hardware and based on history
  
- - Static branch prediction is commonly user-assisted and determinated by
+ - Static branch prediction is commonly user-assisted and determined by
    the compiler (likely/unlikely)
 
 The branch prediction table is a small memory indexed by the lower bits of the
@@ -19,20 +19,20 @@ conditional instruction address.
  - Predition "not take" is correct: no penalty
  - Uncorrect prediction: change prediction, flush pipeline
 
-The 2 bit sturanting counter is a 4 state table. T-T-NT-NT.
+The 2 bit saturating counter is a 4 state table. T-T-NT-NT.
 
 A correlated predictor try to solve the problem of predictions that depends on
 multiple branches.
-It keeps an history of past m braches.
+It keeps a history of past m braches.
 
-A tournament predictor uses different predictor and associate. for each branch,
-who is the best predictor using 2-bit.
+A tournament predictor uses different predictor and associate, for each branch,
+the best predictor using 2-bit.
 
-For indirect branches the game is harder.
+For indirect branches, the game is harder.
 The branch target buffer is used (a small cache) when prediction bits are
 coupled with target addresses.
 
-For ret instruction there is the return address stack buffer.
+For ret instruction, there is the return address stack buffer.
 
 The fetch both targets technique is a possibility but does not help with
 multiple targets (e.g. switches).
@@ -41,14 +41,14 @@ multiple targets (e.g. switches).
 ------------------
 
 A copy of the architectural state among each logical core. Less hardware
-required but needs an arbitartion mechanism.
+required but needs an arbitration mechanism.
 
 In the Intel case there is a division in the architecture:
 
  - Front-end:
 
-   This stage delivers instructions to later pipeline. They are not
-   x86 CISC instructions but RISC u-ops that are coverted by the microcode.
+   This stage delivers instructions to the later pipeline. They are not
+   x86 CISC instructions but RISC u-ops that are converted by the microcode.
    u-ops are cached in the Execution Trace Cache (TC).
    
    TC entries are tagged with thread information and the access is arbitrated
@@ -64,11 +64,11 @@ In the Intel case there is a division in the architecture:
    features (e.g. buffer for load/store, another for int arith).
    
    The register renaming allows u-ops of different threads to operate in data
-   separation. It also put u-ops in two new queue, one for memory operations
+   separation. It also put u-ops in two new queues, one for memory operations
    another for other operations. 
    
    Instruction schedulers take u-ops from the 2 queues and are thread-oblivious.
-   u-ops are evaluated only in abse of the avaiability of their operands.
+   u-ops are evaluated only in base of the avaiability of their operands.
    
    The retirement stage commits the microarchitectural stage to the
    architectural stage. Store operations here are written to L1 cache.
@@ -76,38 +76,38 @@ In the Intel case there is a division in the architecture:
 3) Multi-core
 -------------
 
-The Cache Coherence define the correct behaviour of the caches regardless how
+The Cache Coherence defines the correct behavior of the caches regardless of how
 they are employed.
 
  - Strong Coherence:
     
    All memory operation to a single location (coming from all
    cores) must be executed in a total order that respects the order of the
-   commints of each core.
+   commits of each core.
    
-   Two invariants used to implements: SWMR, only one core taht can R/W or many
-   cores that can only reads a single location. DV says that when an epoch
+   Two invariants used to implements: SWMR, only one core that can R/W or many
+   cores that can only read a single location. DV says that when an epoch
    starts the value of a location must be the same value that was at the end
-   of the last epoch with single R/W core.
+   of the last epoch with a single R/W core.
  
  - Weak Coherence:
  
-   For performance SWMR is dropped and so DV is only eventually. Loads see the
+   For performance, SWMR is dropped and so DV is only eventually. Loads see the
    last written value only after N epochs.
   
  - No Coherence:
  
    The fastest. Programmers must coordinate cache with explicit requests.
 
-There are two king of coherency transactions:
+There are two kinds of coherency transactions:
 
   - Get: load a block into a cache line
   - Put: evict the block into a cache line
 
-These transactions are associated to messages exchanged to ensure the chosen
+These transactions are associated with messages exchanged to ensure the chosen
 coherence model.
 
-The are families fo coherence protocols:
+There are families fo coherence protocols:
 
  - Invalidate protocols: when a core writes it invalidates all other copies in
    the other cores.
@@ -117,14 +117,14 @@ The are families fo coherence protocols:
  
  - Snooping Cache: coherence requests are broadcasted to all cores. It needs
    arbitrarization on the bus to serialize requests and an interconnection layer
-   for the toal order.
+   for the total order.
    Fast but not scalable.
  
- - Directory Based: coherence requests are unicsted to a directory that forwards
-   only to the appropriate cores. Directory does also serialization.
+ - Directory Based: coherence requests are unicsated to a directory that
+   forwards only to the appropriate cores. Directory does also serialization.
    Scalable but not fast.
 
-A cache controller is behind each provate caches of each cores.
+A cache controller is behind each private caches of each core.
 
 A protocol should offers:
 
@@ -137,8 +137,8 @@ A protocol should offers:
  - Exclusivity: an exclusive block is the only copy of the block across all
    caches.
    
- - Ownership: a cache controller is owner of a block if it is responsible for
-   its coherence requests.
+ - Ownership: a cache controller is the owner of a block if it is responsible
+   for its coherence requests.
 
 Write-Through caches have no dirty block cause all stores are immediately
 propagated to the last level cache (LLC).
@@ -147,20 +147,18 @@ False Cache Sharing is when two cores access to different data items that are
 on the same cache line. It produces an un-needed invalidation.
 
 The L1 cache is indexed using virtual address and avoid a TLB lookup. Other
-caches uses physical addresses.
+caches use physical addresses.
 
 The Virtual Aliasing problem occurs when there is a cache indexed with virtual
 addresses.
 
 One type is the homonyms problem cause a virtual address can be associated to
-multiple physiscal addresses. A tag may not identify an unique data.
+multiple physiscal addresses. A tag may not identify a unique data.
 This can be avoided tagging with an Address-Space-ID or flushing cache on
 context switch.
 
-Anoter type the synonyms problem cause several virtual addresses may be mapped
+Another type the synonyms problem cause several virtual addresses may be mapped
 to the same physical address. On cache write only one of them is updated.
-ASID here are not usefule, the cache should be flushed on context switch or
-an hardware system to detect the problem or resticting the mapping so that
+ASID here are not useful, the cache should be flushed on context switch or
+a hardware system to detect the problem or restricting the mapping so that
 shared memories maps on the same cache line.
-
-
